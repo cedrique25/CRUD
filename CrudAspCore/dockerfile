@@ -1,9 +1,18 @@
-FROM microsoft/aspnetcore-build:2.0
-
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.0 AS base
 WORKDIR /app
+EXPOSE 80
 
+FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
+WORKDIR /src
+COPY ["CrudAspCore.csproj", "./"]
+RUN dotnet restore "./CrudAspCore.csproj"
 COPY . .
+RUN dotnet build "CrudAspCore.csproj" -c Release -o /app
 
-RUN dotnet build -c Release
+FROM build AS publish
+RUN dotnet publish "CrudAspCore.csproj" -c Release -o /app
 
-ENTRYPOINT ["dotnet", "run", "--no-launch-profile"]
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app .
+ENTRYPOINT ["dotnet", "CrudAspCore.dll"]
